@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สถิติระยะเวลาการพิจารณาจริยธรรมการวิจัย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16202B;
+  --ink-2:#5A6675;
+  --ink-3:#8A94A1;
+  --paper:#FFFFFF;
+  --wash:#F5F7F8;
+  --line:#E2E7EB;
+  --line-2:#CDD5DC;
+  --fast:#2E6F5E;
+  --fast-soft:#DCEDE7;
+  --slow:#B4652F;
+  --slow-soft:#F7E9DC;
+  --idle:#B9C2CB;
+  --idle-soft:#EDF0F2;
+  --r:10px;
+  --sans:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono","IBM Plex Sans Thai",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);font-size:15px;line-height:1.65;color:var(--ink);
+  background:var(--wash);-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 48px}
+
+/* header */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:22px}
+.head h1{
+  font-size:23px;font-weight:600;letter-spacing:-.015em;margin:0;line-height:1.3;
+}
+.head .sub{font-size:13px;color:var(--ink-2);margin:2px 0 0}
+.stamp{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);text-align:right;white-space:nowrap}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+select{
+  font-family:var(--sans);font-size:13.5px;color:var(--ink);
+  background:var(--paper);border:1px solid var(--line-2);border-radius:var(--r);
+  padding:8px 30px 8px 12px;appearance:none;cursor:pointer;min-height:38px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%235A6675' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 11px center;
+}
+select:hover{border-color:var(--ink-3)}
+select:focus-visible{outline:2px solid var(--fast);outline-offset:1px}
+.reset{
+  font-family:var(--sans);font-size:13.5px;color:var(--ink-2);background:none;
+  border:1px solid transparent;border-radius:var(--r);padding:8px 12px;cursor:pointer;min-height:38px;
+}
+.reset:hover{color:var(--ink);border-color:var(--line-2);background:var(--paper)}
+.reset:focus-visible{outline:2px solid var(--fast);outline-offset:1px}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.kpi .lbl{font-size:12.5px;color:var(--ink-2);letter-spacing:.01em}
+.kpi .val{font-family:var(--mono);font-size:29px;font-weight:500;letter-spacing:-.03em;line-height:1.25;margin-top:2px}
+.kpi .val .u{font-family:var(--sans);font-size:14px;font-weight:400;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.kpi.warn{background:var(--slow-soft);border-color:#EBD5C1}
+.kpi.warn .lbl,.kpi.warn .val{color:var(--slow)}
+.kpi.mute .lbl,.kpi.mute .val{color:var(--ink-3)}
+.legend{font-size:12.5px;color:var(--ink-3);margin:0 0 22px;line-height:1.6}
+
+/* panels */
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:14px}
+.panel h2{font-size:15px;font-weight:600;margin:0;letter-spacing:-.005em}
+.panel .hint{font-size:12.5px;color:var(--ink-3);margin:2px 0 16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+
+/* year chart */
+.chart{display:flex;align-items:flex-end;gap:6px;height:132px;border-bottom:1px solid var(--line)}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0}
+.col .n{font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:-.02em}
+.col .n.na{color:var(--idle);font-size:11px}
+.col .b{width:100%;border-radius:3px 3px 0 0;background:var(--fast);transition:height .25s ease}
+.col .b.slow{background:var(--slow)}
+.col .b.na{background:var(--idle-soft)}
+.xaxis{display:flex;gap:6px;margin-top:7px}
+.xaxis span{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);min-width:0}
+.xaxis span em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3)}
+
+/* breakdown rows */
+.row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.row:last-child{margin-bottom:0}
+.row .k{width:88px;flex:none;font-size:13.5px;color:var(--ink-2)}
+.row .t{flex:1;min-width:0;height:8px;background:var(--wash);border-radius:4px;overflow:hidden}
+.row .t i{display:block;height:100%;background:var(--fast);border-radius:4px;transition:width .25s ease}
+.row .t i.slow{background:var(--slow)}
+.row .v{flex:none;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);white-space:nowrap;letter-spacing:-.02em}
+.row.empty .k,.row.empty .v{color:var(--idle)}
+
+/* table */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.tab{
+  font-family:var(--sans);font-size:12.5px;color:var(--ink-2);background:none;
+  border:1px solid var(--line-2);border-radius:100px;padding:5px 13px;cursor:pointer;
+}
+.tab:hover{color:var(--ink);border-color:var(--ink-3)}
+.tab:focus-visible{outline:2px solid var(--fast);outline-offset:1px}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.thead{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+th{
+  text-align:left;font-weight:400;color:var(--ink-3);font-size:12.5px;
+  padding:0 8px 8px 0;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+th:last-child,td:last-child{text-align:right;padding-right:0}
+td{padding:9px 8px 9px 0;border-bottom:1px solid var(--wash);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.code{font-family:var(--mono);font-size:12px;letter-spacing:-.02em;white-space:nowrap}
+.yr{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.dept{color:var(--ink-2);font-size:13px}
+.days{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:-.02em}
+.days.na{color:var(--idle);font-weight:400}
+.pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:100px;white-space:nowrap}
+.pill.ex{background:var(--fast-soft);color:#1E5245}
+.pill.ep{background:#E7EEF4;color:#2A4C68}
+.pill.fb{background:var(--slow-soft);color:#8C4A1D}
+.foot{font-size:12.5px;color:var(--ink-3);margin-top:12px}
+
+/* states */
+.state{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:32px 24px;text-align:center}
+.state p{margin:0 0 6px;font-size:14px}
+.state .why{font-size:13px;color:var(--ink-2);margin:0}
+.state code{font-family:var(--mono);font-size:12px;background:var(--wash);padding:2px 6px;border-radius:4px;word-break:break-all}
+.hidden{display:none}
+
+@media (max-width:560px){
+  .wrap{padding:20px 14px 36px}
+  .head h1{font-size:19px}
+  .stamp{margin-left:0;text-align:left;width:100%}
+  .kpi .val{font-size:25px}
+  .row .k{width:72px;font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div>
+      <h1>ระยะเวลาการพิจารณาจริยธรรมการวิจัย</h1>
+      <p class="sub">นับจากวันที่ออกเลขโครงการ (เอกสารครบ) ถึงวันที่อนุมัติ/รับรอง</p>
+    </div>
+    <div class="stamp" id="stamp"></div>
+  </header>
+
+  <div id="loading" class="state">
+    <p>กำลังโหลดข้อมูล</p>
+    <p class="why">ดึงจาก Google Sheets ที่เผยแพร่ไว้</p>
+  </div>
+
+  <div id="error" class="state hidden">
+    <p>โหลดข้อมูลไม่สำเร็จ</p>
+    <p class="why" id="errmsg"></p>
+  </div>
+
+  <main id="app" class="hidden">
+    <div class="filters">
+      <select id="fy" aria-label="กรองตามปี พ.ศ."></select>
+      <select id="ft" aria-label="กรองตามประเภท"></select>
+      <select id="fd" aria-label="กรองตามหน่วยงาน"></select>
+      <button class="reset" id="reset" type="button">ล้างตัวกรอง</button>
+    </div>
+
+    <section class="kpis" aria-label="ตัวเลขสรุป">
+      <div class="kpi"><div class="lbl">มัธยฐาน</div><div class="val" id="k1">–</div></div>
+      <div class="kpi"><div class="lbl">เฉลี่ย</div><div class="val" id="k2">–</div></div>
+      <div class="kpi"><div class="lbl">อนุมัติแล้ว</div><div class="val" id="k3">–</div></div>
+      <div class="kpi warn"><div class="lbl">รอพิจารณา</div><div class="val" id="k4">–</div></div>
+      <div class="kpi mute"><div class="lbl">N/A</div><div class="val" id="k5">–</div></div>
+    </section>
+    <p class="legend" id="legend"></p>
+
+    <section class="panel">
+      <h2>มัธยฐานรายปี</h2>
+      <p class="hint">ตัวเลขบนแท่งคือจำนวนวัน · ใต้ปีคือจำนวนที่อนุมัติแล้วเทียบกับทั้งหมด</p>
+      <div class="chart" id="chart"></div>
+      <div class="xaxis" id="xaxis"></div>
+    </section>
+
+    <div class="cols">
+      <section class="panel"><h2>ตามประเภท</h2><p class="hint">มัธยฐาน จำนวนวัน</p><div id="byType"></div></section>
+      <section class="panel"><h2>ตามหน่วยงาน</h2><p class="hint">มัธยฐาน จำนวนวัน</p><div id="byDept"></div></section>
+    </div>
+
+    <section class="panel">
+      <div class="thead">
+        <div>
+          <h2>รายโครงการ</h2>
+          <p class="hint" id="tableHint" style="margin-bottom:0"></p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="เลือกกลุ่มโครงการ">
+          <button class="tab" role="tab" data-m="0" aria-selected="true">อนุมัติแล้ว</button>
+          <button class="tab" role="tab" data-m="1" aria-selected="false">รอพิจารณา</button>
+          <button class="tab" role="tab" data-m="2" aria-selected="false">N/A</button>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>รหัสโครงการ</th><th>ปี พ.ศ.</th><th>หน่วยงาน</th><th>ประเภท</th><th id="th5">วัน</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <p class="foot" id="tfoot"></p>
+    </section>
+  </main>
+
+</div>
+
+<script>
+/* ============================================================
+   ตั้งค่า — แก้เฉพาะในบล็อกนี้
+   ============================================================ */
+var CONFIG = {
+
+  // ลิงก์ CSV ที่ได้จาก ไฟล์ > แชร์ > เผยแพร่ทางเว็บ
+  // เลือกชีตที่ต้องการ แล้วเลือกรูปแบบ "ค่าที่คั่นด้วยจุลภาค (.csv)"
+  csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRggIxnxCQYFf3a_OBJ42OyWTrzVPILRA7xy1Zmr1bBXfIrEAGm2VXiGqb1ZoIcaZtV5NsKyKbLSsde/pub?output=csv",
+
+  // ปีที่ถือว่ายังอยู่ระหว่างพิจารณา ปีอื่นที่ข้อมูลไม่ครบจะถูกนับเป็น N/A
+  // อัปเดตเลขนี้เมื่อขึ้นปีงบประมาณใหม่
+  pendingYears: [2569],
+
+  // ทางเลือกแทนการระบุปี ตั้งเป็นจำนวนวัน เช่น 365 แล้วระบบจะถือว่า
+  // โครงการที่ยังไม่มีวันอนุมัติและอายุไม่เกินจำนวนวันนี้คือรอพิจารณา
+  // ตั้งเป็น null เพื่อใช้ pendingYears แทน
+  pendingMaxDays: null,
+
+  // เกินกี่วันให้แท่งกราฟเปลี่ยนเป็นสีส้ม
+  targetDays: 7,
+
+  // จำนวนแถวสูงสุดในตาราง
+  tableRows: 15,
+
+  // ดึงข้อมูลใหม่อัตโนมัติทุกกี่นาที ตั้ง 0 เพื่อปิด
+  refreshMinutes: 30
+};
+/* ========================= จบส่วนตั้งค่า ========================= */
+
+(function(){
+"use strict";
+
+var DEPTS = [
+  "วิทยาลัยพัฒนามหานคร",
+  "คณะวิทยาศาสตร์และเทคโนโลยีสุขภาพ",
+  "วิทยาลัยพัฒนาชุมชนเมือง",
+  "สำนักงานอธิการบดี",
+  "สถาบันพัฒนามหานคร",
+  "สำนักงานสภามหาวิทยาลัย",
+  "คณะแพทยศาสตร์วชิรพยาบาล"
+];
+var SHORT = {
+  "วิทยาลัยพัฒนามหานคร":"วพม.",
+  "คณะวิทยาศาสตร์และเทคโนโลยีสุขภาพ":"วทส.",
+  "วิทยาลัยพัฒนาชุมชนเมือง":"วพช.",
+  "สำนักงานอธิการบดี":"สนอ.",
+  "สถาบันพัฒนามหานคร":"สพม.",
+  "สำนักงานสภามหาวิทยาลัย":"สสม.",
+  "คณะแพทยศาสตร์วชิรพยาบาล":"พวช.",
+  "สังกัดภายนอก":"ภายนอก"
+};
+var TYPES = ["Exemption","Expedited","Full Board"];
+var PILL = {"Exemption":"ex","Expedited":"ep","Full Board":"fb"};
+
+var DATA = [], YEARS = [], DEPTLIST = [], mode = 0;
+var $ = function(id){ return document.getElementById(id); };
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  var rows=[], row=[], f="", q=false, i=0, c, n;
+  for(; i<text.length; i++){
+    c = text[i];
+    if(q){
+      if(c === '"'){
+        if(text[i+1] === '"'){ f += '"'; i++; } else { q = false; }
+      } else { f += c; }
+    } else if(c === '"'){ q = true; }
+    else if(c === ','){ row.push(f); f=""; }
+    else if(c === '\n' || c === '\r'){
+      if(c === '\r' && text[i+1] === '\n') i++;
+      row.push(f); f="";
+      rows.push(row); row=[];
+    } else { f += c; }
+  }
+  row.push(f);
+  if(row.length > 1 || row[0] !== "") rows.push(row);
+  return rows;
+}
+
+function norm(s){ return String(s == null ? "" : s).replace(/\s+/g," ").trim(); }
+
+function findCol(header, tests){
+  for(var i=0;i<header.length;i++){
+    var h = norm(header[i]);
+    for(var t=0;t<tests.length;t++){ if(tests[t](h)) return i; }
+  }
+  return -1;
+}
+
+/* ---------- วันที่ ---------- */
+function parseDate(raw){
+  var s = norm(raw);
+  var m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,5})/);
+  if(!m) return null;
+  var d = +m[1], mo = +m[2], y = +m[3];
+  if(y < 100) y += 2500;
+  if(y > 2600) return null;
+  if(y >= 1900 && y <= 2200) y += 543;
+  if(y < 2400 || y > 2700) return null;
+  if(mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  var dt = new Date(Date.UTC(y - 543, mo - 1, d));
+  if(dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return dt;
+}
+function dayDiff(a,b){ return Math.round((b - a) / 86400000); }
+function todayUTC(){ var n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); }
+
+/* ---------- แปลงเป็นข้อมูลพร้อมใช้ ---------- */
+function build(rows){
+  if(!rows.length) throw new Error("ไฟล์ว่าง");
+  var head = rows[0];
+  var ci = {
+    year:  findCol(head, [function(h){ return h.indexOf("พ.ศ") === 0 || h.indexOf("ปี") === 0; }]),
+    code:  findCol(head, [function(h){ return h.indexOf("รหัสโครงการ") >= 0; }]),
+    start: findCol(head, [function(h){ return h.indexOf("วันที่ออกเลขโครงการ") >= 0; },
+                          function(h){ return h.indexOf("เอกสารครบ") >= 0; }]),
+    dept:  findCol(head, [function(h){ return h === "สังกัด" || h.indexOf("หน่วยงาน") >= 0; }]),
+    type:  findCol(head, [function(h){ return h === "ประเภท"; }]),
+    end:   findCol(head, [function(h){ return h.indexOf("วันที่อนุมัติ") >= 0; }])
+  };
+  var missing = [];
+  ["year","code","start","dept","type","end"].forEach(function(k){ if(ci[k] < 0) missing.push(k); });
+  if(missing.length) throw new Error("ไม่พบคอลัมน์: " + missing.join(", ") + " — ตรวจว่าเผยแพร่ชีตที่ถูกต้องแล้ว");
+
+  var today = todayUTC(), out = [];
+  for(var r=1; r<rows.length; r++){
+    var row = rows[r];
+    var code = norm(row[ci.code]);
+    if(!code) continue;
+    if(code.indexOf("ไม่เข้าเกณฑ์") >= 0) continue;
+
+    var ys = norm(row[ci.year]).replace(/\D/g,"");
+    var year = ys ? +ys : null;
+    if(!year) continue;
+
+    var d = norm(row[ci.dept]);
+    var dept = DEPTS.indexOf(d) >= 0 ? d : "สังกัดภายนอก";
+
+    var t = norm(row[ci.type]);
+    t = t.toLowerCase() === "full board" ? "Full Board" : t;
+    if(TYPES.indexOf(t) < 0) t = "Expedited";
+
+    var s = parseDate(row[ci.start]);
+    var rawEnd = norm(row[ci.end]);
+    var e = parseDate(rawEnd);
+
+    var rec = { year:year, code:code, dept:dept, type:t, days:null, pending:null };
+
+    if(s && e){
+      var n = dayDiff(s, e);
+      if(n >= 0) rec.days = n;
+    }
+    if(rec.days === null && s && !rawEnd){
+      var age = dayDiff(s, today);
+      var isPending = CONFIG.pendingMaxDays != null
+        ? (age <= CONFIG.pendingMaxDays)
+        : (CONFIG.pendingYears.indexOf(year) >= 0);
+      if(isPending && age >= 0) rec.pending = age;
+    }
+    out.push(rec);
+  }
+  if(!out.length) throw new Error("ไม่พบแถวข้อมูลโครงการ");
+  return out;
+}
+
+/* ---------- สถิติ ---------- */
+function median(a){
+  if(!a.length) return null;
+  var s = a.slice().sort(function(x,y){ return x - y; });
+  var m = Math.floor(s.length / 2);
+  var v = s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+  return Math.round(v * 10) / 10;
+}
+function mean(a){
+  if(!a.length) return null;
+  var t = 0; for(var i=0;i<a.length;i++) t += a[i];
+  return Math.round(t / a.length * 10) / 10;
+}
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ---------- ตัวกรอง ---------- */
+function selected(){
+  var y = $("fy").value, t = $("ft").value, d = $("fd").value;
+  return DATA.filter(function(r){
+    if(y && String(r.year) !== y) return false;
+    if(t && r.type !== t) return false;
+    if(d && r.dept !== d) return false;
+    return true;
+  });
+}
+
+function fillSelects(){
+  var ySel = $("fy"), tSel = $("ft"), dSel = $("fd");
+  ySel.innerHTML = '<option value="">ทุกปี พ.ศ.</option>';
+  YEARS.forEach(function(y){
+    var o = document.createElement("option"); o.value = y; o.textContent = y; ySel.appendChild(o);
+  });
+  tSel.innerHTML = '<option value="">ทุกประเภท</option>';
+  TYPES.forEach(function(t){
+    var o = document.createElement("option"); o.value = t; o.textContent = t; tSel.appendChild(o);
+  });
+  dSel.innerHTML = '<option value="">ทุกหน่วยงาน</option>';
+  DEPTLIST.forEach(function(d){
+    var o = document.createElement("option"); o.value = d; o.textContent = d; dSel.appendChild(o);
+  });
+}
+
+/* ---------- แสดงผล ---------- */
+function breakdown(el, groups, emptyLabelled){
+  var max = 0;
+  groups.forEach(function(g){ if(g.n && g.med > max) max = g.med; });
+  var html = "";
+  groups.forEach(function(g){
+    if(!g.n){
+      if(emptyLabelled){
+        html += '<div class="row empty"><span class="k">' + esc(g.key) + '</span>'
+             +  '<span class="t"></span><span class="v">N/A</span></div>';
+      }
+      return;
+    }
+    var w = max > 0 ? Math.max(3, Math.round(g.med / max * 100)) : 3;
+    var slow = g.med > CONFIG.targetDays ? " slow" : "";
+    html += '<div class="row"><span class="k">' + esc(g.key) + '</span>'
+         +  '<span class="t"><i class="' + slow.trim() + '" style="width:' + w + '%"></i></span>'
+         +  '<span class="v">' + g.med + ' วัน · n=' + g.n + '</span></div>';
+  });
+  el.innerHTML = html || '<div class="row empty"><span class="k">ไม่มีข้อมูล</span></div>';
+}
+
+function render(){
+  var rows = selected();
+  var done = rows.filter(function(r){ return r.days !== null; });
+  var pend = rows.filter(function(r){ return r.days === null && r.pending !== null; });
+  var na   = rows.filter(function(r){ return r.days === null && r.pending === null; });
+  var vals = done.map(function(r){ return r.days; });
+
+  var m = median(vals), av = mean(vals);
+  $("k1").innerHTML = m === null ? "N/A" : m + '<span class="u">วัน</span>';
+  $("k2").innerHTML = av === null ? "N/A" : av + '<span class="u">วัน</span>';
+  $("k3").innerHTML = done.length + '<span class="u">/ ' + rows.length + '</span>';
+  $("k4").textContent = pend.length;
+  $("k5").textContent = na.length;
+
+  var rule = CONFIG.pendingMaxDays != null
+    ? "รอพิจารณา นับโครงการที่ยังไม่มีวันอนุมัติและยื่นมาไม่เกิน " + CONFIG.pendingMaxDays + " วัน"
+    : "รอพิจารณา นับเฉพาะปี " + CONFIG.pendingYears.join(", ");
+  $("legend").textContent = rule + " · N/A คือข้อมูลไม่ครบหรือคำนวณไม่ได้ ไม่นำมาคิดสถิติ";
+
+  // กราฟรายปี
+  var ys = $("fy").value ? [ +$("fy").value ] : YEARS;
+  var per = ys.map(function(y){
+    var f = rows.filter(function(r){ return r.year === y; });
+    var v = f.filter(function(r){ return r.days !== null; }).map(function(r){ return r.days; });
+    return { y:y, n:v.length, total:f.length, med: v.length ? median(v) : null };
+  });
+  var mx = 0;
+  per.forEach(function(p){ if(p.med !== null && p.med > mx) mx = p.med; });
+  var bars = "", axis = "";
+  per.forEach(function(p){
+    var h = p.med === null ? 5 : (mx > 0 ? Math.max(5, Math.round(p.med / mx * 108)) : 5);
+    var cls = p.med === null ? "na" : (p.med > CONFIG.targetDays ? "slow" : "");
+    bars += '<div class="col"><span class="n' + (p.med === null ? " na" : "") + '">'
+         +  (p.med === null ? "N/A" : p.med) + '</span>'
+         +  '<span class="b ' + cls + '" style="height:' + h + 'px"></span></div>';
+    axis += '<span>' + p.y + '<em>' + p.n + '/' + p.total + '</em></span>';
+  });
+  $("chart").innerHTML = bars;
+  $("xaxis").innerHTML = axis;
+
+  // ตามประเภท
+  breakdown($("byType"), TYPES.map(function(t){
+    var v = done.filter(function(r){ return r.type === t; }).map(function(r){ return r.days; });
+    return { key:t, n:v.length, med: v.length ? median(v) : 0 };
+  }), true);
+
+  // ตามหน่วยงาน
+  breakdown($("byDept"), DEPTLIST.map(function(d){
+    var v = done.filter(function(r){ return r.dept === d; }).map(function(r){ return r.days; });
+    return { key: SHORT[d] || d, n:v.length, med: v.length ? median(v) : 0 };
+  }), false);
+
+  // ตาราง
+  var src, key, hint;
+  if(mode === 0){ src = done; key = "days";    hint = "เรียงจากที่ใช้เวลานานที่สุด"; }
+  else if(mode === 1){ src = pend; key = "pending"; hint = "เรียงจากที่ค้างนานที่สุด นับถึงวันนี้"; }
+  else { src = na; key = null; hint = "ข้อมูลไม่ครบหรือวันอนุมัติมาก่อนวันเอกสารครบ"; }
+
+  $("th5").textContent = key ? "วัน" : "สถานะ";
+  $("tableHint").textContent = hint;
+
+  var list = key
+    ? src.slice().sort(function(a,b){ return b[key] - a[key]; })
+    : src.slice().sort(function(a,b){ return a.code < b.code ? -1 : 1; });
+  var show = list.slice(0, CONFIG.tableRows), html = "";
+
+  show.forEach(function(r){
+    var val = key
+      ? '<span class="days">' + r[key] + '</span>'
+      : '<span class="days na">N/A</span>';
+    html += '<tr>'
+         +  '<td class="code">' + esc(r.code) + '</td>'
+         +  '<td class="yr">' + r.year + '</td>'
+         +  '<td class="dept">' + esc(SHORT[r.dept] || r.dept) + '</td>'
+         +  '<td><span class="pill ' + PILL[r.type] + '">' + r.type + '</span></td>'
+         +  '<td>' + val + '</td>'
+         +  '</tr>';
+  });
+  $("tbody").innerHTML = html || '<tr><td colspan="5" style="color:#8A94A1;padding:16px 0">ไม่มีรายการในกลุ่มนี้</td></tr>';
+  $("tfoot").textContent = list.length > show.length
+    ? "แสดง " + show.length + " จาก " + list.length + " โครงการ"
+    : "ทั้งหมด " + list.length + " โครงการ";
+}
+
+/* ---------- โหลด ---------- */
+function stamp(){
+  var n = new Date();
+  var p = function(x){ return x < 10 ? "0" + x : x; };
+  $("stamp").textContent = "อัปเดต " + p(n.getDate()) + "/" + p(n.getMonth()+1) + "/" + (n.getFullYear()+543)
+                         + " " + p(n.getHours()) + ":" + p(n.getMinutes());
+}
+
+function fail(msg){
+  $("loading").classList.add("hidden");
+  $("error").classList.remove("hidden");
+  $("errmsg").innerHTML = esc(msg);
+}
+
+function load(first){
+  if(!CONFIG.csvUrl || CONFIG.csvUrl.indexOf("http") !== 0){
+    fail('ยังไม่ได้ตั้งค่า <code>csvUrl</code> ในไฟล์ HTML — เปิดไฟล์แล้ววางลิงก์ CSV ที่เผยแพร่จาก Google Sheets');
+    return;
+  }
+  var url = CONFIG.csvUrl + (CONFIG.csvUrl.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now();
+  fetch(url, { cache: "no-store" })
+    .then(function(res){
+      if(!res.ok) throw new Error("เซิร์ฟเวอร์ตอบกลับ " + res.status + " — ตรวจว่าเผยแพร่ชีตเป็น CSV แล้ว");
+      return res.text();
+    })
+    .then(function(text){
+      if(text.indexOf("<!DOCTYPE") === 0 || text.indexOf("<html") === 0)
+        throw new Error("ลิงก์นี้ส่งกลับมาเป็นหน้าเว็บ ไม่ใช่ CSV — ใช้ลิงก์จาก เผยแพร่ทางเว็บ แล้วเลือกรูปแบบ .csv");
+      DATA = build(parseCSV(text));
+      YEARS = DATA.map(function(r){ return r.year; })
+        .filter(function(v,i,a){ return a.indexOf(v) === i; })
+        .sort(function(a,b){ return a - b; });
+      DEPTLIST = DEPTS.concat(["สังกัดภายนอก"]).filter(function(d){
+        return DATA.some(function(r){ return r.dept === d; });
+      });
+      var keep = { y:$("fy").value, t:$("ft").value, d:$("fd").value };
+      fillSelects();
+      $("fy").value = keep.y; $("ft").value = keep.t; $("fd").value = keep.d;
+      $("loading").classList.add("hidden");
+      $("error").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      stamp();
+      render();
+    })
+    .catch(function(err){
+      if(first) fail(err.message || String(err));
+    });
+}
+
+/* ---------- เหตุการณ์ ---------- */
+["fy","ft","fd"].forEach(function(id){
+  $(id).addEventListener("change", render);
+});
+$("reset").addEventListener("click", function(){
+  $("fy").value = ""; $("ft").value = ""; $("fd").value = ""; render();
+});
+Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(btn){
+  btn.addEventListener("click", function(){
+    mode = +btn.getAttribute("data-m");
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){
+      b.setAttribute("aria-selected", b === btn ? "true" : "false");
+    });
+    render();
+  });
+});
+
+load(true);
+if(CONFIG.refreshMinutes > 0){
+  setInterval(function(){ load(false); }, CONFIG.refreshMinutes * 60000);
+}
+})();
+</script>
+</body>
+</html>
