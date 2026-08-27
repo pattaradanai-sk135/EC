@@ -44,15 +44,39 @@ body{
 
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
-select{
-  font-family:var(--sans);font-size:13.5px;color:var(--ink);
+.ms{position:relative}
+.ms-btn{
+  font-family:var(--sans);font-size:13.5px;color:var(--ink);text-align:left;
   background:var(--paper);border:1px solid var(--line-2);border-radius:var(--r);
-  padding:8px 30px 8px 12px;appearance:none;cursor:pointer;min-height:38px;
+  padding:8px 30px 8px 12px;cursor:pointer;min-height:38px;max-width:270px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%235A6675' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat:no-repeat;background-position:right 11px center;
 }
-select:hover{border-color:var(--ink-3)}
-select:focus-visible{outline:2px solid var(--fast);outline-offset:1px}
+.ms-btn:hover{border-color:var(--ink-3)}
+.ms-btn:focus-visible{outline:2px solid var(--fast);outline-offset:1px}
+.ms.on .ms-btn{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.ms-btn b{font-weight:500}
+.ms-panel{
+  position:absolute;z-index:40;top:calc(100% + 5px);left:0;min-width:100%;max-width:320px;
+  background:var(--paper);border:1px solid var(--line-2);border-radius:var(--r);
+  box-shadow:0 8px 22px rgba(22,32,43,.11);padding:6px;max-height:290px;overflow-y:auto;
+}
+.ms-panel[hidden]{display:none}
+.ms-opt{
+  display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:6px;
+  cursor:pointer;font-size:13.5px;line-height:1.4;
+}
+.ms-opt:hover{background:var(--wash)}
+.ms-opt input{accent-color:var(--fast);width:15px;height:15px;margin:0;flex:none;cursor:pointer}
+.ms-opt span{min-width:0}
+.ms-opt .cnt{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);flex:none}
+.ms-all{
+  width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;color:var(--ink-2);
+  background:none;border:none;border-bottom:1px solid var(--line);
+  padding:6px 9px 8px;margin-bottom:4px;cursor:pointer;
+}
+.ms-all:hover{color:var(--ink)}
 .reset{
   font-family:var(--sans);font-size:13.5px;color:var(--ink-2);background:none;
   border:1px solid transparent;border-radius:var(--r);padding:8px 12px;cursor:pointer;min-height:38px;
@@ -171,9 +195,18 @@ tr:last-child td{border-bottom:none}
 
   <main id="app" class="hidden">
     <div class="filters">
-      <select id="fy" aria-label="กรองตามปี พ.ศ."></select>
-      <select id="ft" aria-label="กรองตามประเภท"></select>
-      <select id="fd" aria-label="กรองตามหน่วยงาน"></select>
+      <div class="ms" id="ms-year">
+        <button class="ms-btn" type="button" aria-expanded="false" aria-haspopup="true">ทุกปี พ.ศ.</button>
+        <div class="ms-panel" hidden role="group" aria-label="กรองตามปี พ.ศ."></div>
+      </div>
+      <div class="ms" id="ms-type">
+        <button class="ms-btn" type="button" aria-expanded="false" aria-haspopup="true">ทุกประเภท</button>
+        <div class="ms-panel" hidden role="group" aria-label="กรองตามประเภท"></div>
+      </div>
+      <div class="ms" id="ms-dept">
+        <button class="ms-btn" type="button" aria-expanded="false" aria-haspopup="true">ทุกหน่วยงาน</button>
+        <div class="ms-panel" hidden role="group" aria-label="กรองตามหน่วยงาน"></div>
+      </div>
       <button class="reset" id="reset" type="button">ล้างตัวกรอง</button>
     </div>
 
@@ -408,30 +441,111 @@ function esc(s){
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-/* ---------- ตัวกรอง ---------- */
+/* ---------- ตัวกรอง (เลือกได้หลายรายการ) ---------- */
+var PICK = { year:[], type:[], dept:[] };
+
+var FILTERS = [
+  { key:"year", el:"ms-year", all:"ทุกปี พ.ศ.",   unit:"ปี",       label:function(v){ return v; } },
+  { key:"type", el:"ms-type", all:"ทุกประเภท",    unit:"ประเภท",   label:function(v){ return v; } },
+  { key:"dept", el:"ms-dept", all:"ทุกหน่วยงาน",  unit:"หน่วยงาน", label:function(v){ return SHORT[v] || v; } }
+];
+
 function selected(){
-  var y = $("fy").value, t = $("ft").value, d = $("fd").value;
   return DATA.filter(function(r){
-    if(y && String(r.year) !== y) return false;
-    if(t && r.type !== t) return false;
-    if(d && r.dept !== d) return false;
+    if(PICK.year.length && PICK.year.indexOf(r.year) < 0) return false;
+    if(PICK.type.length && PICK.type.indexOf(r.type) < 0) return false;
+    if(PICK.dept.length && PICK.dept.indexOf(r.dept) < 0) return false;
     return true;
   });
 }
 
-function fillSelects(){
-  var ySel = $("fy"), tSel = $("ft"), dSel = $("fd");
-  ySel.innerHTML = '<option value="">ทุกปี พ.ศ.</option>';
-  YEARS.forEach(function(y){
-    var o = document.createElement("option"); o.value = y; o.textContent = y; ySel.appendChild(o);
+function optionsFor(key){
+  if(key === "year") return YEARS;
+  if(key === "type") return TYPES;
+  return DEPTLIST;
+}
+
+function setLabel(f){
+  var btn = $(f.el).querySelector(".ms-btn");
+  var box = $(f.el);
+  var picked = PICK[f.key];
+  if(!picked.length){
+    btn.textContent = f.all;
+    box.classList.remove("on");
+  } else if(picked.length <= 2){
+    btn.innerHTML = "<b>" + picked.map(f.label).map(esc).join(", ") + "</b>";
+    box.classList.add("on");
+  } else {
+    btn.innerHTML = "<b>" + picked.length + " " + f.unit + "</b>";
+    box.classList.add("on");
+  }
+}
+
+function buildFilters(){
+  FILTERS.forEach(function(f){
+    var box = $(f.el), panel = box.querySelector(".ms-panel");
+    var opts = optionsFor(f.key);
+    PICK[f.key] = PICK[f.key].filter(function(v){ return opts.indexOf(v) >= 0; });
+
+    var html = '<button type="button" class="ms-all">เลือกทั้งหมด / ล้าง</button>';
+    opts.forEach(function(v){
+      var n = DATA.filter(function(r){ return r[f.key] === v; }).length;
+      var on = PICK[f.key].indexOf(v) >= 0 ? " checked" : "";
+      html += '<label class="ms-opt"><input type="checkbox" value="' + esc(v) + '"' + on + '>'
+           +  '<span>' + esc(f.label(v)) + '</span><span class="cnt">' + n + '</span></label>';
+    });
+    panel.innerHTML = html;
+
+    panel.querySelector(".ms-all").addEventListener("click", function(){
+      PICK[f.key] = PICK[f.key].length ? [] : opts.slice();
+      Array.prototype.forEach.call(panel.querySelectorAll("input"), function(i){
+        i.checked = PICK[f.key].length > 0;
+      });
+      setLabel(f); render();
+    });
+
+    Array.prototype.forEach.call(panel.querySelectorAll("input"), function(input){
+      input.addEventListener("change", function(){
+        var raw = input.value;
+        var val = f.key === "year" ? +raw : raw;
+        var i = PICK[f.key].indexOf(val);
+        if(input.checked){ if(i < 0) PICK[f.key].push(val); }
+        else if(i >= 0){ PICK[f.key].splice(i, 1); }
+        PICK[f.key].sort(function(a,b){
+          return opts.indexOf(a) - opts.indexOf(b);
+        });
+        setLabel(f); render();
+      });
+    });
+
+    setLabel(f);
   });
-  tSel.innerHTML = '<option value="">ทุกประเภท</option>';
-  TYPES.forEach(function(t){
-    var o = document.createElement("option"); o.value = t; o.textContent = t; tSel.appendChild(o);
+}
+
+function closeAllPanels(except){
+  FILTERS.forEach(function(f){
+    var box = $(f.el);
+    if(box === except) return;
+    box.querySelector(".ms-panel").hidden = true;
+    box.querySelector(".ms-btn").setAttribute("aria-expanded", "false");
   });
-  dSel.innerHTML = '<option value="">ทุกหน่วยงาน</option>';
-  DEPTLIST.forEach(function(d){
-    var o = document.createElement("option"); o.value = d; o.textContent = d; dSel.appendChild(o);
+}
+
+function wireDropdowns(){
+  FILTERS.forEach(function(f){
+    var box = $(f.el), btn = box.querySelector(".ms-btn"), panel = box.querySelector(".ms-panel");
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var open = panel.hidden;
+      closeAllPanels(box);
+      panel.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    panel.addEventListener("click", function(e){ e.stopPropagation(); });
+  });
+  document.addEventListener("click", function(){ closeAllPanels(null); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") closeAllPanels(null);
   });
 }
 
@@ -477,7 +591,7 @@ function render(){
   $("legend").textContent = rule + " · N/A คือข้อมูลไม่ครบหรือคำนวณไม่ได้ ไม่นำมาคิดสถิติ";
 
   // กราฟรายปี
-  var ys = $("fy").value ? [ +$("fy").value ] : YEARS;
+  var ys = PICK.year.length ? PICK.year.slice().sort(function(a,b){ return a - b; }) : YEARS;
   var per = ys.map(function(y){
     var f = rows.filter(function(r){ return r.year === y; });
     var v = f.filter(function(r){ return r.days !== null; }).map(function(r){ return r.days; });
@@ -576,9 +690,7 @@ function load(first){
       DEPTLIST = DEPTS.concat(["สังกัดภายนอก"]).filter(function(d){
         return DATA.some(function(r){ return r.dept === d; });
       });
-      var keep = { y:$("fy").value, t:$("ft").value, d:$("fd").value };
-      fillSelects();
-      $("fy").value = keep.y; $("ft").value = keep.t; $("fd").value = keep.d;
+      buildFilters();
       $("loading").classList.add("hidden");
       $("error").classList.add("hidden");
       $("app").classList.remove("hidden");
@@ -591,11 +703,15 @@ function load(first){
 }
 
 /* ---------- เหตุการณ์ ---------- */
-["fy","ft","fd"].forEach(function(id){
-  $(id).addEventListener("change", render);
-});
+wireDropdowns();
 $("reset").addEventListener("click", function(){
-  $("fy").value = ""; $("ft").value = ""; $("fd").value = ""; render();
+  PICK.year = []; PICK.type = []; PICK.dept = [];
+  FILTERS.forEach(function(f){
+    Array.prototype.forEach.call($(f.el).querySelectorAll("input"), function(i){ i.checked = false; });
+    setLabel(f);
+  });
+  closeAllPanels(null);
+  render();
 });
 Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(btn){
   btn.addEventListener("click", function(){
