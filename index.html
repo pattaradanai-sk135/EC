@@ -122,6 +122,11 @@ body{
 .row .t i.slow{background:var(--slow)}
 .row .v{flex:none;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);white-space:nowrap;letter-spacing:-.02em}
 .row.empty .k,.row.empty .v{color:var(--idle)}
+.row.stack{display:block;margin-bottom:14px}
+.row.stack .top{display:flex;align-items:baseline;gap:10px;margin-bottom:5px}
+.row.stack .k{width:auto;flex:1;min-width:0;font-size:13.5px;line-height:1.45;color:var(--ink)}
+.row.stack .v{flex:none}
+.row.stack .t{width:100%;display:block}
 
 /* table */
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
@@ -134,7 +139,7 @@ body{
 .tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .thead{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
 .scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:660px}
 th{
   text-align:left;font-weight:400;color:var(--ink-3);font-size:12.5px;
   padding:0 8px 8px 0;border-bottom:1px solid var(--line);white-space:nowrap;
@@ -144,7 +149,7 @@ td{padding:9px 8px 9px 0;border-bottom:1px solid var(--wash);vertical-align:midd
 tr:last-child td{border-bottom:none}
 .code{font-family:var(--mono);font-size:12px;letter-spacing:-.02em;white-space:nowrap}
 .yr{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
-.dept{color:var(--ink-2);font-size:13px}
+.dept{color:var(--ink-2);font-size:13px;line-height:1.4;min-width:200px}
 .days{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:-.02em}
 .days.na{color:var(--idle);font-weight:400}
 .pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:100px;white-space:nowrap}
@@ -299,16 +304,6 @@ var DEPTS = [
   "สำนักงานสภามหาวิทยาลัย",
   "คณะแพทยศาสตร์วชิรพยาบาล"
 ];
-var SHORT = {
-  "วิทยาลัยพัฒนามหานคร":"วพม.",
-  "คณะวิทยาศาสตร์และเทคโนโลยีสุขภาพ":"วทส.",
-  "วิทยาลัยพัฒนาชุมชนเมือง":"วพช.",
-  "สำนักงานอธิการบดี":"สนอ.",
-  "สถาบันพัฒนามหานคร":"สพม.",
-  "สำนักงานสภามหาวิทยาลัย":"สสม.",
-  "คณะแพทยศาสตร์วชิรพยาบาล":"พวช.",
-  "สังกัดภายนอก":"ภายนอก"
-};
 var TYPES = ["Exemption","Expedited","Full Board"];
 var PILL = {"Exemption":"ex","Expedited":"ep","Full Board":"fb"};
 
@@ -447,7 +442,7 @@ var PICK = { year:[], type:[], dept:[] };
 var FILTERS = [
   { key:"year", el:"ms-year", all:"ทุกปี พ.ศ.",   unit:"ปี",       label:function(v){ return v; } },
   { key:"type", el:"ms-type", all:"ทุกประเภท",    unit:"ประเภท",   label:function(v){ return v; } },
-  { key:"dept", el:"ms-dept", all:"ทุกหน่วยงาน",  unit:"หน่วยงาน", label:function(v){ return SHORT[v] || v; } }
+  { key:"dept", el:"ms-dept", all:"ทุกหน่วยงาน",  unit:"หน่วยงาน", label:function(v){ return v; } }
 ];
 
 function selected(){
@@ -472,12 +467,14 @@ function setLabel(f){
   if(!picked.length){
     btn.textContent = f.all;
     box.classList.remove("on");
-  } else if(picked.length <= 2){
-    btn.innerHTML = "<b>" + picked.map(f.label).map(esc).join(", ") + "</b>";
-    box.classList.add("on");
+    return;
+  }
+  box.classList.add("on");
+  var text = picked.map(f.label).join(", ");
+  if(picked.length <= 2 && text.length <= 30){
+    btn.innerHTML = "<b>" + esc(text) + "</b>";
   } else {
     btn.innerHTML = "<b>" + picked.length + " " + f.unit + "</b>";
-    box.classList.add("on");
   }
 }
 
@@ -550,23 +547,30 @@ function wireDropdowns(){
 }
 
 /* ---------- แสดงผล ---------- */
-function breakdown(el, groups, emptyLabelled){
+function breakdown(el, groups, opts){
+  opts = opts || {};
   var max = 0;
   groups.forEach(function(g){ if(g.n && g.med > max) max = g.med; });
   var html = "";
   groups.forEach(function(g){
     if(!g.n){
-      if(emptyLabelled){
-        html += '<div class="row empty"><span class="k">' + esc(g.key) + '</span>'
-             +  '<span class="t"></span><span class="v">N/A</span></div>';
-      }
+      if(!opts.showEmpty) return;
+      html += opts.stack
+        ? '<div class="row stack empty"><div class="top"><span class="k">' + esc(g.key)
+          + '</span><span class="v">N/A</span></div><span class="t"></span></div>'
+        : '<div class="row empty"><span class="k">' + esc(g.key)
+          + '</span><span class="t"></span><span class="v">N/A</span></div>';
       return;
     }
     var w = max > 0 ? Math.max(3, Math.round(g.med / max * 100)) : 3;
-    var slow = g.med > CONFIG.targetDays ? " slow" : "";
-    html += '<div class="row"><span class="k">' + esc(g.key) + '</span>'
-         +  '<span class="t"><i class="' + slow.trim() + '" style="width:' + w + '%"></i></span>'
-         +  '<span class="v">' + g.med + ' วัน · n=' + g.n + '</span></div>';
+    var slow = g.med > CONFIG.targetDays ? "slow" : "";
+    var meta = g.med + ' วัน · n=' + g.n;
+    var track = '<span class="t"><i class="' + slow + '" style="width:' + w + '%"></i></span>';
+    html += opts.stack
+      ? '<div class="row stack"><div class="top"><span class="k">' + esc(g.key)
+        + '</span><span class="v">' + meta + '</span></div>' + track + '</div>'
+      : '<div class="row"><span class="k">' + esc(g.key) + '</span>' + track
+        + '<span class="v">' + meta + '</span></div>';
   });
   el.innerHTML = html || '<div class="row empty"><span class="k">ไม่มีข้อมูล</span></div>';
 }
@@ -615,13 +619,13 @@ function render(){
   breakdown($("byType"), TYPES.map(function(t){
     var v = done.filter(function(r){ return r.type === t; }).map(function(r){ return r.days; });
     return { key:t, n:v.length, med: v.length ? median(v) : 0 };
-  }), true);
+  }), { showEmpty:true });
 
   // ตามหน่วยงาน
   breakdown($("byDept"), DEPTLIST.map(function(d){
     var v = done.filter(function(r){ return r.dept === d; }).map(function(r){ return r.days; });
-    return { key: SHORT[d] || d, n:v.length, med: v.length ? median(v) : 0 };
-  }), false);
+    return { key:d, n:v.length, med: v.length ? median(v) : 0 };
+  }), { stack:true });
 
   // ตาราง
   var src, key, hint;
@@ -644,7 +648,7 @@ function render(){
     html += '<tr>'
          +  '<td class="code">' + esc(r.code) + '</td>'
          +  '<td class="yr">' + r.year + '</td>'
-         +  '<td class="dept">' + esc(SHORT[r.dept] || r.dept) + '</td>'
+         +  '<td class="dept">' + esc(r.dept) + '</td>'
          +  '<td><span class="pill ' + PILL[r.type] + '">' + r.type + '</span></td>'
          +  '<td>' + val + '</td>'
          +  '</tr>';
